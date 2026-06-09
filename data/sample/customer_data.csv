@@ -1,0 +1,5 @@
+CustomerID,CustomerName,Email,Country,CustomerSegment
+C101,John Smith,john.smith@example.com,USA,Retail
+C102,Emily Brown,emily.brown@example.com,Canada,Retail
+C104,David Wilson,david.wilson@example.com,UK,Corporate
+C105,Rahul Sharma,rahul.sharma@example.com,India,Retail

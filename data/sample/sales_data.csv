@@ -1,0 +1,7 @@
+OrderID,CustomerID,ProductID,Quantity,UnitPrice,OrderDate,Country,SalesChannel
+1001,C101,P001,2,500,2026-01-01,USA,Online
+1002,C102,P002,1,1200,2026-01-02,Canada,Store
+1003,,P003,5,50,2026-01-03,USA,Online
+1004,C104,P004,-1,250,2026-01-04,UK,Store
+1005,C105,P005,3,400,2026-01-05,India,Online
+1005,C105,P005,3,400,2026-01-05,India,Online

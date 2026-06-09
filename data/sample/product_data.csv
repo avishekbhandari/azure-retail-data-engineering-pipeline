@@ -1,0 +1,6 @@
+ProductID,ProductName,Category,CostPrice,SellingPrice
+P001,Laptop,Electronics,400,500
+P002,Smartphone,Electronics,900,1200
+P003,USB Cable,Accessories,20,50
+P004,Office Chair,Furniture,150,250
+P005,Monitor,Electronics,300,400
