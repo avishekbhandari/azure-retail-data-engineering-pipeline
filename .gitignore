@@ -1,0 +1,33 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+
+# Environment and secret files
+.env
+*.pem
+*.key
+*.secret
+secrets/
+credentials/
+
+# Logs
+*.log
+logs/
+
+# Compressed/large files
+*.zip
+*.tar
+*.gz
+# Azure local settings
+local.settings.json
