@@ -123,6 +123,128 @@
 						}
 					]
 				}
+			},
+			{
+				"name": "Get_Metadata_Customer",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_S3_Customer_CSV",
+						"type": "DatasetReference"
+					},
+					"fieldList": [
+						"exists",
+						"size",
+						"lastModified"
+					],
+					"storeSettings": {
+						"type": "AmazonS3ReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "If_Customer_File_Valid",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Get_Metadata_Customer",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@and(equals(activity('Get_Metadata_Customer').output.exists,true),greater(activity('Get_Metadata_Customer').output.size,0))",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Fail_Customer_File_Missing",
+							"type": "Fail",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"message": "customer_data.csv is missing or empty in AWS S3 path azure-retail/source/customer_data.csv",
+								"errorCode": "CUSTOMER_FILE_VALIDATION_FAILED"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Copy_Customer_S3_To_ADLS",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AmazonS3ReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_S3_Customer_CSV",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ADLS_Raw_Customer_CSV",
+									"type": "DatasetReference"
+								}
+							]
+						}
+					]
+				}
 			}
 		],
 		"annotations": []
