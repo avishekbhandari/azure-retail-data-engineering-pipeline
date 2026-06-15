@@ -1,0 +1,40 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "ADF-Retail-DEV-avi"
+		},
+		"LS_ADLS_Retail_properties_typeProperties_url": {
+			"value": "https://stretaildev001avishek.dfs.core.windows.net/"
+		},
+		"LS_AWS_S3_Retail_properties_typeProperties_accessKeyId": {
+			"value": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KeyVault_Retail",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "aws-access-key"
+			}
+		},
+		"LS_AzureSQL_Retail_properties_typeProperties_server": {
+			"value": "sql-retail-dev-avi01.database.windows.net"
+		},
+		"LS_AzureSQL_Retail_properties_typeProperties_database": {
+			"value": "RetailDW"
+		},
+		"LS_AzureSQL_Retail_properties_typeProperties_userName": {
+			"value": "admin01"
+		},
+		"LS_KeyVault_Retail_properties_typeProperties_baseUrl": {
+			"value": "https://KV-Retail-Dev-avi.vault.azure.net/"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
