@@ -1,5 +1,5 @@
 {
-	"name": "PL_S3_To_ADLS",
+	"name": "PL_S3_To_ADLS_Basic_Test",
 	"properties": {
 		"activities": [
 			{
