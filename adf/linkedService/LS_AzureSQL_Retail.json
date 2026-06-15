@@ -1,0 +1,24 @@
+{
+	"name": "LS_AzureSQL_Retail",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "sql-retail-dev-avi01.database.windows.net",
+			"database": "RetailDW",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "admin01",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KeyVault_Retail",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "sql-admin-password"
+			}
+		}
+	}
+}

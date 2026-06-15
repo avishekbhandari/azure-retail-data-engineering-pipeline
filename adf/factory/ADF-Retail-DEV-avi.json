@@ -1,0 +1,15 @@
+{
+	"name": "ADF-Retail-DEV-avi",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "westus3",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "14b40488-47ea-4edb-a7e4-a7fb17d70c9f",
+		"tenantId": "4fce493f-1743-4d33-bdec-79e288863c19"
+	}
+}

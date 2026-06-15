@@ -1,0 +1,25 @@
+{
+	"name": "DS_S3_Product_CSV",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AWS_S3_Retail",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AmazonS3Location",
+				"bucketName": "azure-retail",
+				"folderPath": "source",
+				"fileName": "product_data.csv"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
