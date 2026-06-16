@@ -521,7 +521,11 @@
 							"name": "SinkProcessedSalesParquet"
 						}
 					],
-					"transformations": [],
+					"transformations": [
+						{
+							"name": "DerivedSalesStandardizedColumns"
+						}
+					],
 					"scriptLines": [
 						"source(output(",
 						"          OrderID as string,",
@@ -536,7 +540,13 @@
 						"     allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     ignoreNoFilesFound: false) ~> SourceRawSales",
-						"SourceRawSales sink(allowSchemaDrift: true,",
+						"SourceRawSales derive(Quantity_Int = toInteger(Quantity),",
+						"          UnitPrice_Decimal = toDecimal(UnitPrice,10,2),",
+						"          OrderDate_Clean = toDate(OrderDate),",
+						"          Country_Clean = upper(trim(Country)),",
+						"          TotalAmount = toInteger(Quantity) * toDecimal(UnitPrice,10,2),",
+						"          LoadDate = currentTimestamp()) ~> DerivedSalesStandardizedColumns",
+						"DerivedSalesStandardizedColumns sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
 						"     umask: 0022,",
