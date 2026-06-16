@@ -1230,6 +1230,53 @@
 				"[concat(variables('factoryId'), '/datasets/DS_S3_Product_CSV')]",
 				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Raw_Product_CSV')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Sales_Transformation')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Run_DF_Sales_Cleansing",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_Sales_Cleansing",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SourceRawSales": {},
+									"SinkProcessedSalesParquet": {},
+									"SinkErrorSalesParquet": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_Sales_Cleansing')]"
+			]
 		}
 	]
 }
