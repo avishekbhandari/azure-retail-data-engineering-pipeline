@@ -921,6 +921,52 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS_Retail')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_Sales_Cleansing')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_Raw_Sales_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "SourceRawSales"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_Processed_Sales_Parquet",
+								"type": "DatasetReference"
+							},
+							"name": "SinkProcessedSalesParquet"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> SourceRawSales",
+						"SourceRawSales sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SinkProcessedSalesParquet"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Raw_Sales_CSV')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Processed_Sales_Parquet')]"
+			]
 		}
 	]
 }
