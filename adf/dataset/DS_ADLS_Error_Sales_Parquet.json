@@ -1,0 +1,20 @@
+{
+	"name": "DS_ADLS_Error_Sales_Parquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_Retail",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "sales",
+				"fileSystem": "error"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}
