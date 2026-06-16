@@ -46,6 +46,9 @@
 				},
 				{
 					"name": "DerivedCustomerCategory"
+				},
+				{
+					"name": "SelectFinalProcessedSalesColumns"
 				}
 			],
 			"scriptLines": [
@@ -87,7 +90,22 @@
 				"    TotalAmount >= 1000, 'Premium',\r",
 				"    'Standard'\r",
 				")) ~> DerivedCustomerCategory",
-				"DerivedCustomerCategory sink(allowSchemaDrift: true,",
+				"DerivedCustomerCategory select(mapColumn(",
+				"          OrderID,",
+				"          CustomerID,",
+				"          ProductID,",
+				"          Quantity = Quantity_Int,",
+				"          UnitPrice = UnitPrice_Decimal,",
+				"          OrderDate = OrderDate_Clean,",
+				"          Country = Country_Clean,",
+				"          SalesChannel,",
+				"          TotalAmount,",
+				"          LoadDate,",
+				"          CustomerCategory",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectFinalProcessedSalesColumns",
+				"SelectFinalProcessedSalesColumns sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'parquet',",
 				"     umask: 0022,",
