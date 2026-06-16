@@ -537,6 +537,12 @@
 						},
 						{
 							"name": "SplitValidInvalidSales"
+						},
+						{
+							"name": "WindowOrderDeduplication"
+						},
+						{
+							"name": "FilterFirstOrderRecord"
 						}
 					],
 					"scriptLines": [
@@ -570,7 +576,11 @@
 						"DerivedSalesValidationFlags split(RejectReason == '',",
 						"     RejectReason != '',",
 						"     disjoint: false) ~> SplitValidInvalidSales@(ValidSalesRows, InvalidSalesRows)",
-						"SplitValidInvalidSales@ValidSalesRows sink(allowSchemaDrift: true,",
+						"SplitValidInvalidSales@ValidSalesRows window(over(OrderID),",
+						"     asc(OrderDate_Clean, true),",
+						"     OrderRowNumber = rowNumber()) ~> WindowOrderDeduplication",
+						"WindowOrderDeduplication filter(OrderRowNumber == 1) ~> FilterFirstOrderRecord",
+						"FilterFirstOrderRecord sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
 						"     umask: 0022,",
