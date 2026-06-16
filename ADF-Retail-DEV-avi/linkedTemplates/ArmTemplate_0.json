@@ -519,11 +519,24 @@
 								"type": "DatasetReference"
 							},
 							"name": "SinkProcessedSalesParquet"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_Error_Sales_Parquet",
+								"type": "DatasetReference"
+							},
+							"name": "SinkErrorSalesParquet"
 						}
 					],
 					"transformations": [
 						{
 							"name": "DerivedSalesStandardizedColumns"
+						},
+						{
+							"name": "DerivedSalesValidationFlags"
+						},
+						{
+							"name": "SplitValidInvalidSales"
 						}
 					],
 					"scriptLines": [
@@ -546,20 +559,40 @@
 						"          Country_Clean = upper(trim(Country)),",
 						"          TotalAmount = toInteger(Quantity) * toDecimal(UnitPrice,10,2),",
 						"          LoadDate = currentTimestamp()) ~> DerivedSalesStandardizedColumns",
-						"DerivedSalesStandardizedColumns sink(allowSchemaDrift: true,",
+						"DerivedSalesStandardizedColumns derive(RejectReason = case(\r",
+						"    isNull(CustomerID) || trim(CustomerID) == '', 'NULL_CUSTOMER',\r",
+						"    isNull(Quantity_Int) || Quantity_Int <= 0, 'INVALID_QUANTITY',\r",
+						"    isNull(UnitPrice_Decimal) || UnitPrice_Decimal <= 0, 'INVALID_UNIT_PRICE',\r",
+						"    isNull(Country_Clean) || trim(Country_Clean) == '', 'MISSING_COUNTRY',\r",
+						"    Country_Clean != 'USA' && Country_Clean != 'CANADA' && Country_Clean != 'UK' && Country_Clean != 'INDIA', 'INVALID_COUNTRY',\r",
+						"    ''\r",
+						")) ~> DerivedSalesValidationFlags",
+						"DerivedSalesValidationFlags split(RejectReason == '',",
+						"     RejectReason != '',",
+						"     disjoint: false) ~> SplitValidInvalidSales@(ValidSalesRows, InvalidSalesRows)",
+						"SplitValidInvalidSales@ValidSalesRows sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
 						"     umask: 0022,",
 						"     preCommands: [],",
 						"     postCommands: [],",
 						"     skipDuplicateMapInputs: true,",
-						"     skipDuplicateMapOutputs: true) ~> SinkProcessedSalesParquet"
+						"     skipDuplicateMapOutputs: true) ~> SinkProcessedSalesParquet",
+						"SplitValidInvalidSales@InvalidSalesRows sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SinkErrorSalesParquet"
 					]
 				}
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Raw_Sales_CSV')]",
-				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Processed_Sales_Parquet')]"
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Processed_Sales_Parquet')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Error_Sales_Parquet')]"
 			]
 		},
 		{
