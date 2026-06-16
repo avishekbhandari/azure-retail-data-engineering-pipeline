@@ -543,6 +543,9 @@
 						},
 						{
 							"name": "FilterFirstOrderRecord"
+						},
+						{
+							"name": "DerivedCustomerCategory"
 						}
 					],
 					"scriptLines": [
@@ -580,7 +583,11 @@
 						"     asc(OrderDate_Clean, true),",
 						"     OrderRowNumber = rowNumber()) ~> WindowOrderDeduplication",
 						"WindowOrderDeduplication filter(OrderRowNumber == 1) ~> FilterFirstOrderRecord",
-						"FilterFirstOrderRecord sink(allowSchemaDrift: true,",
+						"FilterFirstOrderRecord derive(CustomerCategory = case(\r",
+						"    TotalAmount >= 1000, 'Premium',\r",
+						"    'Standard'\r",
+						")) ~> DerivedCustomerCategory",
+						"DerivedCustomerCategory sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     format: 'parquet',",
 						"     umask: 0022,",
