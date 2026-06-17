@@ -198,6 +198,70 @@
 						"type": "DatasetReference"
 					}
 				]
+			},
+			{
+				"name": "Audit_Parquet_To_SQL_Load",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Copy_Processed_Sales_To_FactSales",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_InsertETLAuditLog]",
+					"storedProcedureParameters": {
+						"ActivityName": {
+							"value": "Copy_Processed_Sales_To_FactSales",
+							"type": "String"
+						},
+						"ErrorMessage": {
+							"value": null,
+							"type": "String"
+						},
+						"LoadEndTime": {
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"LoadStartTime": {
+							"value": "@pipeline().TriggerTime",
+							"type": "DateTime"
+						},
+						"PipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "String"
+						},
+						"RowsLoaded": {
+							"value": "@activity('Copy_Processed_Sales_To_FactSales').output.rowsCopied",
+							"type": "Int32"
+						},
+						"RunID": {
+							"value": "@pipeline().RunId",
+							"type": "String"
+						},
+						"Status": {
+							"value": "Succeeded",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSQL_Retail",
+					"type": "LinkedServiceReference"
+				}
 			}
 		],
 		"annotations": []
