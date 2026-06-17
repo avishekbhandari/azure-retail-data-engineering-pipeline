@@ -44,6 +44,287 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/PL_Parquet_To_SQL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy_Processed_Sales_To_FactSales",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "ParquetSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"wildcardFolderPath": "sales",
+									"wildcardFileName": "*.parquet",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "ParquetReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false,
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "OrderID",
+											"type": "String",
+											"physicalType": "UTF8"
+										},
+										"sink": {
+											"name": "OrderID",
+											"type": "String",
+											"physicalType": "varchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "UTF8"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "String",
+											"physicalType": "varchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ProductID",
+											"type": "String",
+											"physicalType": "UTF8"
+										},
+										"sink": {
+											"name": "ProductID",
+											"type": "String",
+											"physicalType": "varchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Quantity",
+											"type": "Int32",
+											"physicalType": "INT32"
+										},
+										"sink": {
+											"name": "Quantity",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "UnitPrice",
+											"type": "Decimal",
+											"physicalType": "DECIMAL",
+											"scale": 2,
+											"precision": 10
+										},
+										"sink": {
+											"name": "UnitPrice",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 2,
+											"precision": 10
+										}
+									},
+									{
+										"source": {
+											"name": "OrderDate",
+											"type": "DateTime",
+											"physicalType": "DATE"
+										},
+										"sink": {
+											"name": "OrderDate",
+											"type": "Date",
+											"physicalType": "date"
+										}
+									},
+									{
+										"source": {
+											"name": "Country",
+											"type": "String",
+											"physicalType": "UTF8"
+										},
+										"sink": {
+											"name": "Country",
+											"type": "String",
+											"physicalType": "varchar"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesChannel",
+											"type": "String",
+											"physicalType": "UTF8"
+										},
+										"sink": {
+											"name": "SalesChannel",
+											"type": "String",
+											"physicalType": "varchar"
+										}
+									},
+									{
+										"source": {
+											"name": "TotalAmount",
+											"type": "Decimal",
+											"physicalType": "DECIMAL",
+											"scale": 2,
+											"precision": 21
+										},
+										"sink": {
+											"name": "TotalAmount",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 2,
+											"precision": 18
+										}
+									},
+									{
+										"source": {
+											"name": "CustomerCategory",
+											"type": "String",
+											"physicalType": "UTF8"
+										},
+										"sink": {
+											"name": "CustomerCategory",
+											"type": "String",
+											"physicalType": "varchar"
+										}
+									},
+									{
+										"source": {
+											"name": "LoadDate",
+											"type": "DateTime",
+											"physicalType": "INT96"
+										},
+										"sink": {
+											"name": "LoadDate",
+											"type": "DateTime",
+											"physicalType": "datetime2"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ADLS_Processed_Sales_Parquet",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_AzureSQL_FactSales",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "Audit_Parquet_To_SQL_Load",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Copy_Processed_Sales_To_FactSales",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[usp_InsertETLAuditLog]",
+							"storedProcedureParameters": {
+								"ActivityName": {
+									"value": "Copy_Processed_Sales_To_FactSales",
+									"type": "String"
+								},
+								"ErrorMessage": {
+									"value": null,
+									"type": "String"
+								},
+								"LoadEndTime": {
+									"value": {
+										"value": "@utcNow()",
+										"type": "Expression"
+									},
+									"type": "DateTime"
+								},
+								"LoadStartTime": {
+									"value": "@pipeline().TriggerTime",
+									"type": "DateTime"
+								},
+								"PipelineName": {
+									"value": "@pipeline().Pipeline",
+									"type": "String"
+								},
+								"RowsLoaded": {
+									"value": "@activity('Copy_Processed_Sales_To_FactSales').output.rowsCopied",
+									"type": "Int32"
+								},
+								"RunID": {
+									"value": "@pipeline().RunId",
+									"type": "String"
+								},
+								"Status": {
+									"value": "Succeeded",
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_AzureSQL_Retail",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Processed_Sales_Parquet')]",
+				"[concat(variables('factoryId'), '/datasets/DS_AzureSQL_FactSales')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_Retail')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/PL_S3_To_ADLS')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -645,6 +926,53 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/PL_Sales_Transformation')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Run_DF_Sales_Cleansing",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_Sales_Cleansing",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SourceRawSales": {},
+									"SinkProcessedSalesParquet": {},
+									"SinkErrorSalesParquet": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_Sales_Cleansing')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/DS_ADLS_Error_Sales_Parquet')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -854,6 +1182,83 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS_Retail')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AzureSQL_FactSales')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSQL_Retail",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "FactSalesID",
+						"type": "bigint",
+						"precision": 19
+					},
+					{
+						"name": "OrderID",
+						"type": "varchar"
+					},
+					{
+						"name": "CustomerID",
+						"type": "varchar"
+					},
+					{
+						"name": "ProductID",
+						"type": "varchar"
+					},
+					{
+						"name": "Quantity",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "UnitPrice",
+						"type": "decimal",
+						"precision": 10,
+						"scale": 2
+					},
+					{
+						"name": "OrderDate",
+						"type": "date"
+					},
+					{
+						"name": "Country",
+						"type": "varchar"
+					},
+					{
+						"name": "SalesChannel",
+						"type": "varchar"
+					},
+					{
+						"name": "TotalAmount",
+						"type": "decimal",
+						"precision": 18,
+						"scale": 2
+					},
+					{
+						"name": "CustomerCategory",
+						"type": "varchar"
+					},
+					{
+						"name": "LoadDate",
+						"type": "datetime2",
+						"scale": 7
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "FactSales"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_Retail')]"
 			]
 		},
 		{
@@ -1229,130 +1634,6 @@
 				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Raw_Sales_CSV')]",
 				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Processed_Sales_Parquet')]",
 				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Error_Sales_Parquet')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/PL_Sales_Transformation')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Run_DF_Sales_Cleansing",
-						"type": "ExecuteDataFlow",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"dataflow": {
-								"referenceName": "DF_Sales_Cleansing",
-								"type": "DataFlowReference",
-								"parameters": {},
-								"datasetParameters": {
-									"SourceRawSales": {},
-									"SinkProcessedSalesParquet": {},
-									"SinkErrorSalesParquet": {}
-								}
-							},
-							"staging": {},
-							"compute": {
-								"coreCount": 8,
-								"computeType": "General"
-							},
-							"traceLevel": "Fine"
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/DF_Sales_Cleansing')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/DS_AzureSQL_FactSales')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_AzureSQL_Retail",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "AzureSqlTable",
-				"schema": [
-					{
-						"name": "FactSalesID",
-						"type": "bigint",
-						"precision": 19
-					},
-					{
-						"name": "OrderID",
-						"type": "varchar"
-					},
-					{
-						"name": "CustomerID",
-						"type": "varchar"
-					},
-					{
-						"name": "ProductID",
-						"type": "varchar"
-					},
-					{
-						"name": "Quantity",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "UnitPrice",
-						"type": "decimal",
-						"precision": 10,
-						"scale": 2
-					},
-					{
-						"name": "OrderDate",
-						"type": "date"
-					},
-					{
-						"name": "Country",
-						"type": "varchar"
-					},
-					{
-						"name": "SalesChannel",
-						"type": "varchar"
-					},
-					{
-						"name": "TotalAmount",
-						"type": "decimal",
-						"precision": 18,
-						"scale": 2
-					},
-					{
-						"name": "CustomerCategory",
-						"type": "varchar"
-					},
-					{
-						"name": "LoadDate",
-						"type": "datetime2",
-						"scale": 7
-					}
-				],
-				"typeProperties": {
-					"schema": "dbo",
-					"table": "FactSales"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_Retail')]"
 			]
 		}
 	]
