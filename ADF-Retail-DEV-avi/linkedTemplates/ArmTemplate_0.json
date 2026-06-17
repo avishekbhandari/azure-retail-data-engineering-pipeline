@@ -1665,7 +1665,7 @@
 						"type": "ExecutePipeline",
 						"dependsOn": [
 							{
-								"activity": "Run_S3_To_ADLS_Ingestion",
+								"activity": "Delete_Error_Sales_Output",
 								"dependencyConditions": [
 									"Succeeded"
 								]
@@ -1707,6 +1707,72 @@
 							"waitOnCompletion": true,
 							"parameters": {}
 						}
+					},
+					{
+						"name": "Delete_Processed_Sales_Output",
+						"type": "Delete",
+						"dependsOn": [
+							{
+								"activity": "Run_S3_To_ADLS_Ingestion",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_ADLS_Processed_Sales_Parquet",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"enableLogging": false,
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							}
+						}
+					},
+					{
+						"name": "Delete_Error_Sales_Output",
+						"type": "Delete",
+						"dependsOn": [
+							{
+								"activity": "Delete_Processed_Sales_Output",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_ADLS_Error_Sales_Parquet",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"enableLogging": false,
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							}
+						}
 					}
 				],
 				"policy": {
@@ -1717,7 +1783,9 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/PL_S3_To_ADLS')]",
 				"[concat(variables('factoryId'), '/pipelines/PL_Sales_Transformation')]",
-				"[concat(variables('factoryId'), '/pipelines/PL_Parquet_To_SQL')]"
+				"[concat(variables('factoryId'), '/pipelines/PL_Parquet_To_SQL')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Processed_Sales_Parquet')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Error_Sales_Parquet')]"
 			]
 		}
 	]
