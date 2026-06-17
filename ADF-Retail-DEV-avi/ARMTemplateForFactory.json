@@ -1787,6 +1787,37 @@
 				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Processed_Sales_Parquet')]",
 				"[concat(variables('factoryId'), '/datasets/DS_ADLS_Error_Sales_Parquet')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TRG_Daily_Retail_ETL')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "PL_Master_Retail_ETL",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2026-06-17T18:03:00",
+						"timeZone": "Eastern Standard Time",
+						"schedule": {}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/PL_Master_Retail_ETL')]"
+			]
 		}
 	]
 }
