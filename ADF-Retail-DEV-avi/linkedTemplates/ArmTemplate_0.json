@@ -1636,6 +1636,89 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/dataflows/DF_Sales_Cleansing')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_Master_Retail_ETL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Run_S3_To_ADLS_Ingestion",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_S3_To_ADLS",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Run_Sales_Transformation",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Run_S3_To_ADLS_Ingestion",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_Sales_Transformation",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Run_Parquet_To_SQL_Load",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Run_Sales_Transformation",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_Parquet_To_SQL",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/PL_S3_To_ADLS')]",
+				"[concat(variables('factoryId'), '/pipelines/PL_Sales_Transformation')]",
+				"[concat(variables('factoryId'), '/pipelines/PL_Parquet_To_SQL')]"
+			]
 		}
 	]
 }
