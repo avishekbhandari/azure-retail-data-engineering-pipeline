@@ -66,42 +66,6 @@ ADF Monitor + Log Analytics
 
 
 
-## Repository Structure
-
-
-azure-retail-data-engineering-pipeline/
-│
-├── adf/
-│   ├── dataflow/
-│   ├── dataset/
-│   ├── factory/
-│   ├── linkedService/
-│   ├── pipeline/
-│   ├── trigger/
-│   └── publish_config.json
-│
-├── architecture/
-│
-├── data/
-│
-├── docs/
-│   ├── project_overview.md
-│   ├── project_steps.md
-│   └── data_quality_rules.md
-│
-├── screenshots/
-│
-├── sql/
-│   ├── 01_create_fact_sales_table.sql
-│   ├── 02_create_etl_audit_log_table.sql
-│   ├── 03_create_audit_stored_procedure.sql
-│   ├── 04_validation_queries.sql
-│   └── README.md
-│
-├── .gitignore
-└── README.md
-
-
 ## Data Flow
 
 ### 1. Source Data
