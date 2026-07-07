@@ -2,15 +2,15 @@
 
 ## Project Overview
 
-This project is an end-to-end Azure Data Engineering pipeline that migrates retail sales data from **AWS S3** to **Azure Data Lake Storage Gen2**, transforms and validates the data using **Azure Data Factory**, stores cleaned records as **Parquet**, loads processed sales data into **Azure SQL Database**, and tracks execution using **ETL audit logging**.
+This project is an end-to-end Azure Data Engineering pipeline that ingests retail CSV files from **AWS S3** into **Azure Data Lake Storage Gen2** using **Azure Data Factory**.
 
-The project demonstrates a real-world batch data engineering workflow with ingestion, validation, transformation, error handling, SQL loading, monitoring, scheduling, and GitHub version control.
+The pipeline validates source files, stores raw data in ADLS Gen2, transforms sales records using **ADF Mapping Data Flow**, writes valid records as **Parquet**, routes invalid records to an error folder, loads processed sales data into **Azure SQL Database**, and records execution details in an **ETL audit table**.
 
-
+---
 
 ## Architecture
 
-
+```text
 AWS S3
   ↓
 Azure Data Factory
@@ -18,189 +18,335 @@ Azure Data Factory
 ADLS Gen2 Raw Zone
   ↓
 ADF Mapping Data Flow
-  ├── Valid Records → Processed Zone as Parquet
-  └── Invalid Records → Error Zone as Parquet
+  ├── Valid Sales Records   → processed/sales/
+  └── Invalid Sales Records → error/sales/
   ↓
-Azure SQL Database
+Azure SQL Database: dbo.FactSales
   ↓
-ETL Audit Log
+Audit Table: dbo.ETLAuditLog
   ↓
 ADF Monitor + Log Analytics
+```
 
+Detailed architecture documentation:
 
+* [`architecture/architecture_diagram.md`](architecture/architecture_diagram.md)
 
+---
 
-## Tools and Services Used
+## Tech Stack
 
-| Service / Tool               | Purpose                                                        |
-| ---------------------------- | -------------------------------------------------------------- |
-| AWS S3                       | Source storage for retail CSV files                            |
-| Azure Data Factory           | Pipeline orchestration, ingestion, transformation, and loading |
-| Azure Data Lake Storage Gen2 | Raw, processed, error, curated, and archive storage zones      |
-| Azure SQL Database           | Final structured serving layer                                 |
-| Azure Key Vault              | Secure credential and secret management                        |
-| Log Analytics Workspace      | ADF monitoring and diagnostic log analysis                     |
-| ADF Mapping Data Flow        | Data cleansing, validation, deduplication, and transformation  |
-| GitHub                       | Version control and project documentation                      |
+| Category        | Tools / Services                                      |
+| --------------- | ----------------------------------------------------- |
+| Source Storage  | AWS S3                                                |
+| Orchestration   | Azure Data Factory                                    |
+| Data Lake       | Azure Data Lake Storage Gen2                          |
+| Transformation  | ADF Mapping Data Flow                                 |
+| Serving Layer   | Azure SQL Database                                    |
+| Security        | Azure Key Vault, Managed Identity, RBAC               |
+| Monitoring      | ADF Monitor, Log Analytics Workspace, SQL audit table |
+| Version Control | GitHub                                                |
 
+---
 
+## Azure Resources Used
 
-## Project Features
+| Resource                    | Name                                        |
+| --------------------------- | ------------------------------------------- |
+| Resource Group              | `RG-Retail-DataEngineering-Dev`             |
+| Storage Account / ADLS Gen2 | `stretaildev001avishek`                     |
+| Azure Data Factory          | `ADF-Retail-DEV-avi`                        |
+| Azure SQL Database          | `RetailDW`                                  |
+| SQL Server                  | `sql-retail-dev-avi01.database.windows.net` |
+| Azure Key Vault             | `KV-Retail-Dev-avi`                         |
+| Log Analytics Workspace     | `LAW-Retail-Dev`                            |
 
-* Ingests retail CSV files from AWS S3
-* Stores raw files in ADLS Gen2
-* Validates source file existence and file size before processing
-* Cleans and transforms sales data using ADF Mapping Data Flow
-* Converts CSV data into Parquet format with Snappy compression
-* Separates valid and invalid records
-* Stores rejected records in an error folder
-* Removes duplicate sales records
-* Adds derived columns such as `TotalAmount`, `LoadDate`, and `CustomerCategory`
-* Loads processed data into Azure SQL Database
-* Creates SQL audit logging using `ETLAuditLog`
-* Uses stored procedure-based audit insertion from ADF
-* Orchestrates the full workflow using a master pipeline
-* Configures a daily schedule trigger
-* Enables monitoring through ADF Monitor and Log Analytics
-* Documents implementation with screenshots and SQL scripts
+---
 
+## Data Sources
 
+Source files were stored in AWS S3:
 
-## Data Flow
+```text
+Bucket: azure-retail
+Folder: source/
+```
 
-### 1. Source Data
+Files:
 
-Retail source files were stored in AWS S3:
-
-
+```text
 sales_data.csv
 customer_data.csv
 product_data.csv
+```
 
+All three files were copied into the ADLS raw zone. The main transformation and SQL loading implementation focuses on the sales dataset. Customer and product files were ingested for future extension.
 
-### 2. Raw Data Ingestion
+---
 
-Azure Data Factory copies the source files from AWS S3 into ADLS Gen2 raw storage.
+## Data Lake Structure
 
-Raw paths:
+ADLS Gen2 was organized into separate containers:
 
+```text
+raw/
+processed/
+curated/
+error/
+archive/
+$logs/
+```
 
-raw/sales/sales_data.csv
-raw/customer/customer_data.csv
-raw/product/product_data.csv
+| Container   | Purpose                                           |
+| ----------- | ------------------------------------------------- |
+| `raw`       | Stores original CSV files copied from AWS S3      |
+| `processed` | Stores valid transformed sales records as Parquet |
+| `error`     | Stores invalid/rejected sales records             |
+| `curated`   | Reserved for future business-ready outputs        |
+| `archive`   | Reserved for future archive files                 |
+| `$logs`     | Storage logging container                         |
 
+The SQL load uses processed sales data from:
 
-### 3. File Validation
+```text
+processed/sales/
+```
 
-Before copying, ADF uses `Get Metadata` and `If Condition` activities to validate:
+---
+
+## Pipeline Flow
+
+### 1. Ingestion: AWS S3 to ADLS Gen2
+
+Pipeline:
+
+```text
+PL_S3_To_ADLS
+```
+
+This pipeline copies retail CSV files from AWS S3 into ADLS raw storage.
+
+It uses:
+
+* `Get Metadata`
+* `If Condition`
+* `Copy Data`
+* `Fail`
+
+Before copying files, the pipeline validates:
 
 * File exists
 * File size is greater than zero
 
-If validation fails, the pipeline stops using a `Fail` activity.
+Raw output paths:
 
-### 4. Data Transformation
+```text
+raw/sales/sales_data.csv
+raw/customer/customer_data.csv
+raw/product/product_data.csv
+```
 
-ADF Mapping Data Flow cleans and transforms sales data by:
+---
 
-* Converting data types
-* Trimming and standardizing country values
-* Calculating `TotalAmount`
-* Adding `LoadDate`
-* Creating `CustomerCategory`
-* Creating validation flags
-* Splitting valid and invalid records
-* Removing duplicate orders
+### 2. Sales Transformation
 
-### 5. Processed and Error Output
+Data flow:
 
-Valid records are stored as Parquet:
+```text
+DF_Sales_Cleansing
+```
 
+Transformation logic includes:
 
+* Convert `Quantity` to integer
+* Convert `UnitPrice` to decimal
+* Convert `OrderDate` to date
+* Standardize `Country`
+* Calculate `TotalAmount`
+* Add `LoadDate`
+* Create `RejectReason`
+* Split valid and invalid records
+* Deduplicate valid sales records by `OrderID`
+* Add `CustomerCategory`
+* Select final processed sales columns
+
+Valid sales records are written to:
+
+```text
 processed/sales/
+```
 
+Invalid sales records are written to:
 
-Invalid records are stored separately:
-
-
+```text
 error/sales/
+```
 
+---
 
-### 6. SQL Load
+### 3. Parquet to Azure SQL Load
 
-Processed Parquet data is loaded into Azure SQL Database table:
+Pipeline:
 
+```text
+PL_Parquet_To_SQL
+```
 
+This pipeline loads processed Parquet files into Azure SQL Database.
+
+Source:
+
+```text
+processed/sales/*.parquet
+```
+
+Sink:
+
+```text
 dbo.FactSales
+```
 
+The SQL load uses a pre-copy script:
 
-### 7. Audit Logging
+```sql
+TRUNCATE TABLE dbo.FactSales;
+```
 
-ADF inserts execution details into:
+This supports full-refresh loading and prevents duplicate rows during repeated test runs.
 
+---
 
+### 4. Master Pipeline
+
+Pipeline:
+
+```text
+PL_Master_Retail_ETL
+```
+
+Execution flow:
+
+```text
+Run_S3_To_ADLS_Ingestion
+  ↓
+Delete_Processed_Sales_Output
+  ↓
+Delete_Error_Sales_Output
+  ↓
+Run_Sales_Transformation
+  ↓
+Run_Parquet_To_SQL_Load
+```
+
+The master pipeline orchestrates ingestion, cleanup, transformation, SQL loading, and audit logging from one place.
+
+---
+
+## Data Quality and Error Handling
+
+The pipeline includes file-level and row-level validation.
+
+### File-Level Validation
+
+The ingestion pipeline validates source files before copying them from AWS S3.
+
+Checks:
+
+* File exists
+* File size is greater than zero
+
+If validation fails, the pipeline stops through a `Fail` activity.
+
+### Row-Level Validation
+
+The sales data flow creates a `RejectReason` column.
+
+Implemented reject reasons:
+
+| Validation Rule                    | Reject Reason        |
+| ---------------------------------- | -------------------- |
+| Missing or blank customer ID       | `NULL_CUSTOMER`      |
+| Invalid or non-positive quantity   | `INVALID_QUANTITY`   |
+| Invalid or non-positive unit price | `INVALID_UNIT_PRICE` |
+| Missing country                    | `MISSING_COUNTRY`    |
+| Country outside allowed list       | `INVALID_COUNTRY`    |
+
+Allowed country values:
+
+```text
+USA
+CANADA
+UK
+INDIA
+```
+
+Invalid records are preserved in:
+
+```text
+error/sales/
+```
+
+Duplicate valid sales records are handled separately using Window and Filter logic before SQL loading.
+
+---
+
+## Azure SQL Database
+
+The final processed sales records are loaded into:
+
+```text
+dbo.FactSales
+```
+
+Main columns:
+
+```text
+FactSalesID
+OrderID
+CustomerID
+ProductID
+Quantity
+UnitPrice
+OrderDate
+Country
+SalesChannel
+TotalAmount
+CustomerCategory
+LoadDate
+```
+
+SQL scripts are stored in:
+
+```text
+sql/
+```
+
+---
+
+## ETL Audit Logging
+
+Audit logging was implemented using:
+
+```text
 dbo.ETLAuditLog
+dbo.usp_InsertETLAuditLog
+```
 
-
-The audit log tracks:
+The audit log captures:
 
 * Pipeline name
 * Activity name
 * Run ID
 * Status
 * Rows loaded
-* Start time
-* End time
+* Load start time
+* Load end time
 * Error message
+* Created timestamp
 
+This supports validation, monitoring, and troubleshooting of pipeline execution.
 
-
-## Azure SQL Objects
-
-The SQL folder contains scripts used in the project:
-
-| Script                                 | Purpose                                                |
-| -------------------------------------- | ------------------------------------------------------ |
-| `01_create_fact_sales_table.sql`       | Creates the final `FactSales` table                    |
-| `02_create_etl_audit_log_table.sql`    | Creates the ETL audit log table                        |
-| `03_create_audit_stored_procedure.sql` | Creates the stored procedure used by ADF audit logging |
-| `04_validation_queries.sql`            | Contains SQL validation queries                        |
-
-
-
-## Pipelines Created
-
-| Pipeline                  | Purpose                                              |
-| ------------------------- | ---------------------------------------------------- |
-| `PL_S3_To_ADLS`           | Copies CSV files from AWS S3 to ADLS raw zone        |
-| `PL_Sales_Transformation` | Runs Mapping Data Flow to clean and split sales data |
-| `PL_Parquet_To_SQL`       | Loads processed Parquet data into Azure SQL          |
-| `PL_Master_Retail_ETL`    | Orchestrates the full end-to-end ETL workflow        |
-
-
-
-## Data Quality and Error Handling
-
-The pipeline includes both file-level and row-level error handling.
-
-### File-Level Validation
-
-ADF validates whether source files exist and are not empty before copying them.
-
-### Row-Level Validation
-
-The Mapping Data Flow creates a `RejectReason` column and separates records into valid and invalid streams.
-
-Examples of rejected records:
-
-* Null customer records
-* Invalid quantity records
-* Invalid country records
-
-
-Invalid records are stored in:
-error/sales/
-
+---
 
 ## Monitoring
 
@@ -208,92 +354,101 @@ Monitoring was implemented using:
 
 * Azure Data Factory Monitor
 * Log Analytics Workspace
-* SQL audit log table
+* SQL audit table
 
-ADF diagnostic logs were sent to Log Analytics for pipeline, activity, and trigger run tracking.
+ADF diagnostic logs were sent to Log Analytics for:
+
+* Pipeline runs
+* Activity runs
+* Trigger runs
 
 Example KQL query:
 
-
+```kusto
 ADFActivityRun
 | where TimeGenerated > ago(24h)
 | where PipelineName == "PL_S3_To_ADLS" and Status == "Succeeded"
 | order by TimeGenerated desc
 | project TimeGenerated, PipelineName, ActivityName, ActivityType, Status
+```
 
+---
+
+## Trigger Configuration
+
+Schedule trigger:
+
+```text
+TRG_Daily_Retail_ETL
+```
+
+Related pipeline:
+
+```text
+PL_Master_Retail_ETL
+```
+
+The trigger was configured for daily automation. During learning and testing, it can remain stopped to avoid unnecessary recurring cost and can be started when scheduled execution is required.
+
+---
 
 ## Validation
 
-The final pipeline output was validated using SQL queries.
+The project was validated using:
+
+* ADF pipeline runs
+* ADLS output files
+* SQL validation queries
+* SQL audit records
+* Log Analytics query results
+* Screenshots
 
 Validation checks included:
 
-* FactSales row count
-* Loaded sales records
-* Duplicate order check
-* Invalid record rejection
-* Valid record load verification
-* Audit log verification
+* Source files copied from AWS S3 to ADLS raw storage
+* Metadata validation completed for source files
+* Processed Parquet output created in `processed/sales/`
+* Error Parquet output created in `error/sales/`
+* `dbo.FactSales` loaded successfully
+* Invalid records excluded from `dbo.FactSales`
+* Duplicate orders deduplicated before SQL loading
+* Audit records inserted into `dbo.ETLAuditLog`
+* Master pipeline completed successfully
+* Schedule trigger configured
 
-Example:
+---
 
+## Repository Documentation
 
-SELECT COUNT(*) AS FactSalesRowCount
-FROM dbo.FactSales;
+| File / Folder                                                                  | Purpose                                                 |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| [`docs/project_overview.md`](docs/project_overview.md)                         | High-level project overview                             |
+| [`docs/project_steps.md`](docs/project_steps.md)                               | Step-by-step implementation summary                     |
+| [`docs/data_quality_rules.md`](docs/data_quality_rules.md)                     | Data validation and error-handling rules                |
+| [`architecture/architecture_diagram.md`](architecture/architecture_diagram.md) | Architecture diagram and flow                           |
+| [`sql/`](sql/)                                                                 | SQL scripts for tables, audit procedure, and validation |
+| [`screenshots/`](screenshots/)                                                 | Evidence screenshots from Azure, ADF, SQL, and GitHub   |
 
+---
 
+## Key Outcomes
 
-SELECT 
-    OrderID,
-    COUNT(*) AS DuplicateCount
-FROM dbo.FactSales
-GROUP BY OrderID
-HAVING COUNT(*) > 1;
+This project demonstrates practical Data Engineering skills in:
 
-
-SELECT TOP 10 *
-FROM dbo.ETLAuditLog
-ORDER BY AuditID DESC;
-
-
-## Documentation
-
-Detailed project steps are available here:
-
-docs/project_steps.md
-
-
-Additional documentation:
-
-docs/project_overview.md
-docs/data_quality_rules.md
-sql/README.md
-
-
-Screenshots are stored in:
-
-screenshots/
-
-## Key Learning Outcomes
-
-This project demonstrates practical experience with:
-
-* Azure Data Factory pipeline development
 * Cross-cloud ingestion from AWS S3 to Azure
-* Azure Data Lake Storage Gen2
-* Azure Key Vault integration
-* Managed identity and RBAC
-* ADF Mapping Data Flow
-* Data validation and error handling
-* Parquet file generation
+* Azure Data Factory pipeline development
+* ADLS Gen2 data lake organization
+* Azure Key Vault-secured credential management
+* Managed identity and RBAC usage
+* Metadata-based file validation
+* ADF Mapping Data Flow transformation
+* Row-level data quality handling
+* Error record separation
+* Parquet output generation
 * Azure SQL Database loading
-* ETL audit logging
-* Log Analytics monitoring
-* Schedule trigger automation
-* GitHub-based project version control
-
-
-
-
-
-
+* Full-refresh SQL load control
+* SQL-based ETL audit logging
+* ADF Monitor and Log Analytics monitoring
+* Master pipeline orchestration
+* Schedule trigger configuration
+* GitHub-based project documentation
