@@ -420,15 +420,18 @@ Validation checks included:
 
 ## Repository Documentation
 
-| File / Folder                                                                  | Purpose                                                 |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| [`docs/project_overview.md`](docs/project_overview.md)                         | High-level project overview                             |
-| [`docs/project_steps.md`](docs/project_steps.md)                               | Step-by-step implementation summary                     |
-| [`docs/data_quality_rules.md`](docs/data_quality_rules.md)                     | Data validation and error-handling rules                |
-| [`architecture/architecture_diagram.md`](architecture/architecture_diagram.md) | Architecture diagram and flow                           |
-| [`sql/`](sql/)                                                                 | SQL scripts for tables, audit procedure, and validation |
-| [`screenshots/`](screenshots/)                                                 | Evidence screenshots from Azure, ADF, SQL, and GitHub   |
-
+| File / Folder | Purpose |
+|---|---|
+| [`README.md`](README.md) | Main project summary and recruiter-facing overview |
+| [`adf/`](adf/) | Azure Data Factory JSON artifacts for pipelines, datasets, linked services, data flow, and trigger |
+| [`docs/project_overview.md`](docs/project_overview.md) | High-level project overview |
+| [`docs/project_steps.md`](docs/project_steps.md) | Step-by-step implementation summary |
+| [`docs/data_quality_rules.md`](docs/data_quality_rules.md) | Data validation and error-handling rules |
+| [`docs/validation_results.md`](docs/validation_results.md) | Final validation checks and results |
+| [`architecture/architecture_diagram.md`](architecture/architecture_diagram.md) | Architecture diagram and flow |
+| [`sql/`](sql/) | SQL scripts for tables, audit procedure, stored procedure, and validation |
+| [`screenshots/`](screenshots/) | Evidence screenshots from Azure, ADF, SQL, and GitHub |
+| [`data/`](data/) | Sample source data used for the pipeline |
 ---
 
 ## Key Outcomes
